@@ -51,7 +51,7 @@ class FakeOutputPin:
 
         # only works till klipper 0.12.0-346
         if hasattr(printer_config, 'status_settings'):
-
+            self.klipper_version = "<= 0.12.0-346"
             if self.is_pwm: # slider
                 pin_status['scale'] = self.scale
                 pin_status['pwm'] = True
@@ -62,7 +62,9 @@ class FakeOutputPin:
 
         # since Klipper version 0.12.0-347 only on/off elements work and no sliders anymore
         elif hasattr(printer_config, 'status_raw_config'):
-            pin_status['pwm'] = False
+            self.is_pwm = False
+            pin_status['pwm'] = "False" # must be a string, otherwise KlipperScreen will crash
+            pin_status['scale'] = 1.0
             printer_config.status_raw_config[output_pin_name] = pin_status
 
     def _handle_ready(self):

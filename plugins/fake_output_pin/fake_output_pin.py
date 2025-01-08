@@ -33,24 +33,37 @@ class FakeOutputPin:
 
     def _handle_connect(self):
         # Add this as an output_pin so it will show up in various UI
-        # like fluidd or mainsail and we can use it in GCODE like
+        # like fluidd or mainsail and klipperScreen we can use it in GCODE like
         # any other macros:
         #   printer['output_pin my_pin'].value
         output_pin_name = 'output_pin ' + self.name
         self.printer.add_object(output_pin_name, self)
 
-        # fluidd reads the configfile for these. This is another hack, but
+        # fluidd/mainsail reads the configfile for these. This is another hack, but
         # it seems to be ok. Confirmed that SAVE_CONFIG doesn't pick this up.
         printer_config = self.printer.lookup_object('configfile')
-        printer_config.status_settings[output_pin_name] = {
-            # pin
-            'pwm': self.is_pwm,
+        
+        pin_status = {
+            'pin': "VP",
             'value': self.last_value,
-            'shutdown_value': self.shutdown_value,
-            # cycle_time
-            # hardware_pwm
-            'scale': self.scale
+            'shutdown_value': self.shutdown_value              
         }
+
+        # only works till klipper 0.12.0-346
+        if hasattr(printer_config, 'status_settings'):
+
+            if self.is_pwm: # slider
+                pin_status['scale'] = self.scale
+                pin_status['pwm'] = True
+            else: # button
+                pin_status['pwm'] = False
+                      
+            printer_config.status_settings[output_pin_name] = pin_status
+
+        # since Klipper version 0.12.0-347 only on/off elements work and no sliders anymore
+        elif hasattr(printer_config, 'status_raw_config'):
+            pin_status['pwm'] = False
+            printer_config.status_raw_config[output_pin_name] = pin_status
 
     def _handle_ready(self):
         # Run the GCODE on startup
